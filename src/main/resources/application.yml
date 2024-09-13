@@ -37,3 +37,20 @@ mybatis-plus:
 logging:
   level:
     com.head.wordeasebackend: debug
+
+knife4j:
+  enable: true
+  openapi:
+    title: 伙伴匹配系统接口文档
+    description: 接口文档
+    email: iamhead@163.com
+    concat: 林尚达
+    url:
+    version: v4.0
+    license: Apache 2.0
+    group:
+      test1:
+        group-name: head
+        api-rule: package
+        api-rule-resources:
+          - com.head.wordeasebackend.controller
