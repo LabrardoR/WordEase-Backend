@@ -28,7 +28,7 @@ spring:
 mybatis-plus:
   type-aliases-package: com.head.wordeasebackend.model.entity
   configuration:
-    map-underscore-to-camel-case: false
+    map-underscore-to-camel-case: true
   global-config:
     db-config:
       logic-delete-field: isDelete # 全局逻辑删除的实体字段名(since 3.3.0,配置后可以忽略不配置步骤2)
@@ -41,7 +41,7 @@ logging:
 knife4j:
   enable: true
   openapi:
-    title: 伙伴匹配系统接口文档
+    title: WordEase接口文档
     description: 接口文档
     email: iamhead@163.com
     concat: 林尚达

@@ -1,21 +1,22 @@
 # 创建库
 drop database if exists word_ease;
 create database if not exists word_ease character set = utf8mb4;
+use word_ease;
 # 用户表
 create table user
 (
     username     varchar(256)                       null comment '用户昵称',
     id           bigint auto_increment comment 'id'
         primary key,
-    userAccount  varchar(256)                       null comment '账号',
-    avatarUrl    varchar(1024)                      null comment '用户头像',
+    user_account  varchar(256)                       null comment '账号',
+    avatar_url    varchar(1024)                      null comment '用户头像',
     gender       tinyint                            null comment '性别',
-    userPassword varchar(512)                       not null comment '密码',
+    user_password varchar(512)                       not null comment '密码',
     phone        varchar(128)                       null comment '电话',
     email        varchar(512)                       null comment '邮箱',
-    createTime   datetime default CURRENT_TIMESTAMP null comment '创建时间',
-    updateTime   datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
-    isDelete     tinyint  default 0                 not null comment '是否删除'
+    create_time   datetime default CURRENT_TIMESTAMP null comment '创建时间',
+    update_time   datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
+    is_delete     tinyint  default 0                 not null comment '是否删除'
 )
     comment '用户';
 
