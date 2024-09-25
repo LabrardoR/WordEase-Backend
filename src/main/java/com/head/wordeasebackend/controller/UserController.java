@@ -2,9 +2,8 @@ package com.head.wordeasebackend.controller;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.head.wordeasebackend.common.BaseResponse;
 import com.head.wordeasebackend.common.ErrorCode;
-import com.head.wordeasebackend.common.ResultUtils;
+import com.head.wordeasebackend.common.Result;
 import com.head.wordeasebackend.exception.BusinessException;
 import com.head.wordeasebackend.model.entity.User;
 import com.head.wordeasebackend.model.request.UserLoginRequest;
@@ -17,7 +16,6 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import static com.head.wordeasebackend.contant.UserConstant.ADMIN_ROLE;
 import static com.head.wordeasebackend.contant.UserConstant.USER_LOGIN_STATE;
 
@@ -41,40 +39,49 @@ public class UserController {
      * @return
      */
     @PostMapping("/register")
-    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
+    public Result userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
         // 校验
         if (userRegisterRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+            Result.fail("请求参数为空");
         }
+        assert userRegisterRequest != null;
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
-        if (StrUtil.isBlank(userAccount)|| StrUtil.isBlank(userPassword)||StrUtil.isBlank(checkPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+
+        if (StrUtil.isBlank(userAccount) || StrUtil.isBlank(userPassword) || StrUtil.isBlank(checkPassword)) {
+            Result.fail("账号或密码为空");
         }
-        long result = userService.userRegister(userAccount, userPassword, checkPassword);
-        return ResultUtils.success(result);
+        Result r = userService.userRegister(userAccount, userPassword, checkPassword);
+        if(r == null){
+            return Result.fail("注册失败");
+        }
+        return Result.ok(r);
     }
 
     /**
      * 用户登录
      *
-     * @param userLoginRequest
+     * @param userLoginRequest 登录请求体
      * @param request
      * @return
      */
     @PostMapping("/login")
-    public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    public Result userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
         if (userLoginRequest == null) {
-            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
+            return Result.fail("登录信息为空");
         }
         String userAccount = userLoginRequest.getUserAccount();
         String userPassword = userLoginRequest.getUserPassword();
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
-            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
+            return Result.fail("账号或密码为空");
         }
-        User user = userService.userLogin(userAccount, userPassword, request);
-        return ResultUtils.success(user);
+        Result r = userService.userLogin(userAccount, userPassword, request);
+        User user = (User) r.getData();
+        if(user == null){
+            return Result.fail("账号或密码错误");
+        }
+        return Result.ok(user);
     }
 
     /**
@@ -84,12 +91,15 @@ public class UserController {
      * @return
      */
     @PostMapping("/logout")
-    public BaseResponse<Integer> userLogout(HttpServletRequest request) {
+    public Result userLogout(HttpServletRequest request) {
         if (request == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         int result = userService.userLogout(request);
-        return ResultUtils.success(result);
+        if(result != 1){
+            return Result.fail("注销失败！");
+        }
+        return Result.ok("退出成功！");
     }
 
     /**
@@ -99,21 +109,14 @@ public class UserController {
      * @return
      */
     @GetMapping("/current")
-    public BaseResponse<User> getCurrentUser(HttpServletRequest request) {
-        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        User currentUser = (User) userObj;
-        if (currentUser == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN);
-        }
-        long userId = currentUser.getId();
-        // TODO 校验用户是否合法
-        User user = userService.getById(userId);
-        User safetyUser = userService.getSafetyUser(user);
-        return ResultUtils.success(safetyUser);
+    public Result getCurrentUser(HttpServletRequest request) {
+        User safetyUser = userService.getLoginUser(request);
+        return Result.ok(safetyUser);
     }
 
+    // todo 管理员查询用户列表
     @GetMapping("/search")
-    public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest request) {
+    public Result searchUsers(String username, HttpServletRequest request) {
         if (!isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH, "缺少管理员权限");
         }
@@ -123,11 +126,11 @@ public class UserController {
         }
         List<User> userList = userService.list(queryWrapper);
         List<User> list = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
-        return ResultUtils.success(list);
+        return Result.ok(list);
     }
 
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteUser(@RequestBody long id, HttpServletRequest request) {
+    public Result deleteUser(@RequestBody long id, HttpServletRequest request) {
         if (!isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
@@ -135,7 +138,7 @@ public class UserController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         boolean b = userService.removeById(id);
-        return ResultUtils.success(b);
+        return Result.ok(b);
     }
 
 

@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.head.wordeasebackend.common.ErrorCode;
+import com.head.wordeasebackend.common.Result;
 import com.head.wordeasebackend.exception.BusinessException;
 import com.head.wordeasebackend.model.entity.User;
 import com.head.wordeasebackend.service.UserService;
@@ -49,33 +50,33 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @return 新用户 id
      */
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword) {
+    public Result userRegister(String userAccount, String userPassword, String checkPassword) {
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+            Result.fail("账号或密码为空");
         }
         if (userAccount.length() < 4) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号过短");
+            return Result.fail("账号长度不能小于4位");
         }
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码过短");
+            return Result.fail("密码长度不能小于8位");
         }
         // 账户不能包含特殊字符
         String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
         if (matcher.find()) {
-            return -1;
+            return Result.fail("账号不能包含特殊字符");
         }
         // 密码和校验密码相同
         if (!userPassword.equals(checkPassword)) {
-            return -1;
+            return Result.fail("两次输入的密码不同");
         }
         // 账户不能重复
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_account", userAccount);
         long count = userMapper.selectCount(queryWrapper);
         if (count > 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
+            return Result.fail("账号重复");
         }
  
         // 2. 加密
@@ -86,9 +87,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserPassword(encryptPassword);
         boolean saveResult = this.save(user);
         if (!saveResult) {
-            return -1;
+            return Result.fail("注册失败，数据库错误");
         }
-        return user.getId();
+        return Result.ok(user.getId());
     }
 
     /**
@@ -100,22 +101,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @return 脱敏后的用户信息
      */
     @Override
-    public User userLogin(String userAccount, String userPassword, HttpServletRequest request) {
+    public Result userLogin(String userAccount, String userPassword, HttpServletRequest request) {
         // 1. 校验
         if (StrUtil.isBlank(userAccount) || StrUtil.isBlank(userPassword)) {
-            return null;
+            return Result.fail("账号或密码为空");
         }
         if (userAccount.length() < 4) {
-            return null;
+            return Result.fail("账号长度不能小于4位");
         }
         if (userPassword.length() < 8) {
-            return null;
+            return Result.fail("密码长度不能小于8位");
         }
         // 账户不能包含特殊字符
         String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
         if (matcher.find()) {
-            return null;
+            return Result.fail("账号不能包含特殊字符");
         }
         // 2. 加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
@@ -127,13 +128,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 用户不存在
         if (user == null) {
             log.info("user login failed, userAccount cannot match userPassword");
-            return null;
+            return Result.fail("用户不存在");
         }
         // 3. 用户脱敏
         User safetyUser = getSafetyUser(user);
         // 4. 记录用户的登录态
         request.getSession().setAttribute(USER_LOGIN_STATE, safetyUser);
-        return safetyUser;
+        return Result.ok(safetyUser);
     }
 
     /**
@@ -160,6 +161,36 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     /**
+     * 获取当前登录用户
+     * @param request Session
+     * @return 脱敏后的用户登录信息，如果未登录则返回 null
+     */
+
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        User currentUser = (User) userObj;
+        if (currentUser == null) {
+            log.info("未登录");
+            return null;
+        }
+        long userId = currentUser.getId();
+        // TODO 校验用户是否合法
+        User user = this.getById(userId);
+        if(user == null){
+            log.info("用户不存在");
+            return null;
+        }
+        User safetyUser = this.getSafetyUser(user);
+        return safetyUser;
+    }
+
+    @Override
+    public boolean isLogin(HttpServletRequest request) {
+        return getLoginUser(request) != null;
+    }
+
+    /**
      * 用户注销
      *
      * @param request
@@ -170,5 +201,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         request.getSession().removeAttribute(USER_LOGIN_STATE);
         return 1;
     }
+
+
+
 
 }

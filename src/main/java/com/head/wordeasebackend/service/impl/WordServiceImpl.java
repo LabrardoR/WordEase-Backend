@@ -28,17 +28,17 @@ public class WordServiceImpl extends ServiceImpl<WordMapper, Word>
 
         QueryWrapper<Word> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("spelling",wordSpelling);
-        List<Word> wordList = wordMapper.selectList(queryWrapper);
-        if(wordList.isEmpty()){
+        Word word = wordMapper.selectOne(queryWrapper);
+
+        if(word == null){
             return null;
         }
-        Word word = wordList.get(0);
         WordDto wordDto = new WordDto();
         wordDto.setSpelling(word.getSpelling());
         wordDto.setDefinition(word.getDefinition());
         wordDto.setPhonetic(word.getPhonetic());
         wordDto.setExampleSentence(word.getExampleSentence());
-        if(wordList.size() == 2){
+        if(word.getWordType() == 3){
             wordDto.setWordType("CET4, CET6");
         } else if(word.getWordType() == 1){
             wordDto.setWordType("CET-4");

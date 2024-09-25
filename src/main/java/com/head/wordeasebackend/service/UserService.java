@@ -1,5 +1,6 @@
 package com.head.wordeasebackend.service;
 
+import com.head.wordeasebackend.common.Result;
 import com.head.wordeasebackend.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -20,7 +21,7 @@ public interface UserService extends IService<User> {
      * @param checkPassword 校验密码
      * @return 新用户 id
      */
-    long userRegister(String userAccount, String userPassword, String checkPassword);
+    Result userRegister(String userAccount, String userPassword, String checkPassword);
 
     /**
      * 用户登录
@@ -30,7 +31,7 @@ public interface UserService extends IService<User> {
      * @param request
      * @return 脱敏后的用户信息
      */
-    User userLogin(String userAccount, String userPassword, HttpServletRequest request);
+    Result userLogin(String userAccount, String userPassword, HttpServletRequest request);
 
     /**
      * 用户脱敏
@@ -41,10 +42,22 @@ public interface UserService extends IService<User> {
     User getSafetyUser(User originUser);
 
     /**
+     * 获取当前登录用户
+     *
+     * @param request
+     * @return
+     */
+    User getLoginUser(HttpServletRequest request);
+
+    boolean isLogin(HttpServletRequest request);
+
+    /**
      * 用户注销
      *
      * @param request
      * @return
      */
     int userLogout(HttpServletRequest request);
+
+
 }

@@ -1,7 +1,11 @@
 package com.head.wordeasebackend.service;
 
+import com.head.wordeasebackend.model.dto.WordToListRequest;
+import com.head.wordeasebackend.model.entity.User;
 import com.head.wordeasebackend.model.entity.UserWord;
 import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
 
 /**
 * @author headhead
@@ -10,4 +14,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface UserWordService extends IService<UserWord> {
 
+    Long addWordToUserWordList(User user, WordToListRequest wordToListRequest);
+
+    List<WordToListRequest> getWordList(User user);
 }
