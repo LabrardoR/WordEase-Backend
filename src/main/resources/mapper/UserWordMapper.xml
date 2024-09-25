@@ -8,15 +8,16 @@
             <id property="id" column="id" jdbcType="BIGINT"/>
             <result property="userId" column="user_id" jdbcType="BIGINT"/>
             <result property="wordId" column="word_id" jdbcType="BIGINT"/>
-            <result property="studyStatus" column="study_status" jdbcType="INTEGER"/>
+            <result property="proficiency" column="proficiency" jdbcType="INTEGER"/>
             <result property="lastStudyTime" column="last_study_time" jdbcType="TIMESTAMP"/>
             <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
             <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+            <result property="attribute" column="attribute" jdbcType="INTEGER"/>
     </resultMap>
 
     <sql id="Base_Column_List">
         id,user_id,word_id,
         study_status,last_study_time,create_time,
-        update_time
+        update_time, attribute
     </sql>
 </mapper>

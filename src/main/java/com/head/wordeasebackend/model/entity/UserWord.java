@@ -34,7 +34,7 @@ public class UserWord implements Serializable {
     /**
      * 熟练度 0-9
      */
-    private Integer studyStatus;
+    private Integer proficiency;
 
     /**
      * 最后一次学习时间
@@ -50,6 +50,16 @@ public class UserWord implements Serializable {
      * 更新时间
      */
     private Date updateTime;
+
+    /**
+     * 该单词的属性 1 - 属于用户单词表
+     */
+    private Integer attribute;
+
+    /**
+     * 单词拼写
+     */
+    private String spelling;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
