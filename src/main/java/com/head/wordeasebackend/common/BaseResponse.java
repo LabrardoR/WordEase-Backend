@@ -10,6 +10,7 @@ import java.io.Serializable;
  *
  */
 @Data
+@Deprecated
 public class BaseResponse<T> implements Serializable {
 
     /**

@@ -1,9 +1,12 @@
 package com.head.wordeasebackend.common;
 
+import lombok.Data;
+
 /**
  * 返回工具类
  *
  */
+@Deprecated
 public class ResultUtils {
 
     /**

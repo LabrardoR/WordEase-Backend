@@ -5,6 +5,7 @@ package com.head.wordeasebackend.common;
  * 错误码
  *
  */
+@Deprecated
 public enum ErrorCode {
 
     SUCCESS(0, "ok", ""),
