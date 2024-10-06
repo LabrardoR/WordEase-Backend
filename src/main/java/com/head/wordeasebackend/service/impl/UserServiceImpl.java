@@ -1,11 +1,9 @@
 package com.head.wordeasebackend.service.impl;
 
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.jwt.JWTUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.head.wordeasebackend.common.Result;
-import com.head.wordeasebackend.contant.RedisConstant;
 import com.head.wordeasebackend.model.entity.SafetyUser;
 import com.head.wordeasebackend.model.entity.User;
 import com.head.wordeasebackend.model.response.UserLoginResponse;
@@ -19,13 +17,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpSession;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.head.wordeasebackend.contant.RedisConstant.USER_LOGOUT_KEY;
-import static com.head.wordeasebackend.contant.UserConstant.USER_LOGIN_STATE;
+import static com.head.wordeasebackend.contant.RedisConstant.USER_LOGOUT_TOKEN;
 
 /**
  * 用户服务实现类
@@ -174,7 +170,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public SafetyUser getLoginUser(String token) {
         JwtUtil jwtUtil = new JwtUtil(stringRedisTemplate);
-        if(!jwtUtil.isValidToken(token)){
+        if(jwtUtil.isInBlackList(token)){
             return null;
         }
         SafetyUser safetyUser = jwtUtil.parseToken(token);
@@ -183,7 +179,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 获取当前登录用户 todo
-     * @param session Session
+     * @param
      * @return 脱敏后的用户登录信息，如果未登录则返回 null
      */
 
@@ -219,7 +215,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public int userLogout(String token) {
-        String logoutKey = USER_LOGOUT_KEY + token;
+        String logoutKey = USER_LOGOUT_TOKEN + token;
         // 移除登录态
         stringRedisTemplate.opsForValue().set(logoutKey,"invalid",1, TimeUnit.DAYS);
         return 1;

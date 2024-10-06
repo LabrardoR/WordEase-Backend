@@ -2,12 +2,9 @@ package com.head.wordeasebackend.utils;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.head.wordeasebackend.contant.RedisConstant;
 import com.head.wordeasebackend.model.entity.SafetyUser;
-import com.head.wordeasebackend.model.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -15,7 +12,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.Date;
 
-import static com.head.wordeasebackend.contant.RedisConstant.USER_LOGOUT_KEY;
+import static com.head.wordeasebackend.contant.RedisConstant.USER_LOGOUT_TOKEN;
 
 @Slf4j
 @Component
@@ -47,14 +44,14 @@ public class JwtUtil {
                 .sign(Algorithm.HMAC256(KEY)); // 使用HMAC256算法签名
     }
 
-    public boolean isValidToken(String token){
+    public boolean isInBlackList(String token){
         // 检查 token 是否在黑名单中
-        String blackListKey = USER_LOGOUT_KEY + token;
-        return Boolean.FALSE.equals(stringRedisTemplate.hasKey(blackListKey));
+        String blackListToken = USER_LOGOUT_TOKEN + token;
+        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(blackListToken));
     }
     public SafetyUser parseToken(String token) {
         // 检查 token 是否在黑名单中
-        if (!isValidToken(token)) {
+        if (isInBlackList(token)) {
             return null;
         }
         SafetyUser safetyUser = new SafetyUser();
@@ -75,7 +72,8 @@ public class JwtUtil {
             // 其他不需要从 token 中解析的字段可以默认不设置
         } catch (JWTVerificationException e) {
             // 处理token校验失败的情况，比如token过期、签名不合法等
-            throw new RuntimeException("token校验失败");
+            log.info("token校验失败");
+            return null;
         }
         return safetyUser;
     }

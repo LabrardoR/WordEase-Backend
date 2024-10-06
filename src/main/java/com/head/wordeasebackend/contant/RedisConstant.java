@@ -8,5 +8,5 @@ public interface RedisConstant {
     /**
      * 用户注销常量
      */
-    String USER_LOGOUT_KEY = "user:logout:";
+    String USER_LOGOUT_TOKEN = "user:logout:";
 }
