@@ -12,4 +12,5 @@ public class WordToListRequest {
     private Date date;           // 添加日期
     private String wordSpelling; // 单词拼写
     private Integer proficiency; // 熟练度
+    private String token;       // 令牌
 }

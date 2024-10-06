@@ -5,19 +5,20 @@ import com.head.wordeasebackend.common.Result;
 import com.head.wordeasebackend.model.dto.WordToListRequest;
 import com.head.wordeasebackend.model.dto.WordDto;
 import com.head.wordeasebackend.model.dto.WordRequestDTO;
+import com.head.wordeasebackend.model.entity.SafetyUser;
 import com.head.wordeasebackend.model.entity.User;
+import com.head.wordeasebackend.model.request.TokenRequest;
 import com.head.wordeasebackend.service.UserService;
 import com.head.wordeasebackend.service.UserWordService;
 import com.head.wordeasebackend.service.WordService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.util.List;
 
 @RestController
-@RequestMapping("/word")
-@CrossOrigin
+@RequestMapping ("/word")
 public class WordController {
     @Resource
     private WordService wordService;
@@ -43,36 +44,43 @@ public class WordController {
 
     /**
      * 添加一个单词到用户的单词表
-     * @param wordToListRequest , request
+     * @param wordToListRequest 添加单词到单词表请求类
      * @return
      */
     @PostMapping("/addWordToList")
-    public Result addWordToList(@RequestBody WordToListRequest wordToListRequest, HttpServletRequest request){
-        User user = userService.getLoginUser(request);
-        if(user == null){
+    public Result addWordToList(@RequestBody WordToListRequest wordToListRequest){
+        String token = wordToListRequest.getToken();
+        SafetyUser safetyUser = userService.getLoginUser(token);
+        if(safetyUser == null){
             return Result.fail("用户未登录");
         }
-
-        Long result = userWordService.addWordToUserWordList(user, wordToListRequest);
+        Long result = userWordService.addWordToUserWordList(safetyUser.toUser(), wordToListRequest);
         return Result.ok(result);
     }
 
 
     /**
-     * 查询用户的单词表 todo
-     * @param request
-     * @return
+     * 查询用户的单词表
+     * @param tokenRequest token封装类
+     * @return 单词列表封装类
      */
     @GetMapping("/getWordList")
-    public Result getWordList(HttpServletRequest request){
-        User user = userService.getLoginUser(request);
-        if(user == null){
+    public Result getWordList(@RequestBody TokenRequest tokenRequest){
+        if(tokenRequest == null){
+            return Result.fail("参数错误");
+        }
+        String token = tokenRequest.getToken();
+        if(token == null){
+            return Result.fail("参数错误");
+        }
+        SafetyUser safetyUser = userService.getLoginUser(token);
+        if(safetyUser == null){
             return Result.fail("用户未登录");
         }
 
-        List<WordToListRequest> list = userWordService.getWordList(user);
+        List<WordToListRequest> list = userWordService.getWordList(safetyUser.toUser());
         if(list == null){
-            return Result.fail("用户单词表为空");
+            return Result.ok("单词表目前为空");
         }
         return Result.ok(list);
     }
@@ -83,7 +91,7 @@ public class WordController {
      * @param wordDtoList
      * @return
      */
-    @PostMapping("/")
+    @PostMapping("/test")
     public Result addWordsToList(@RequestBody List<WordDto> wordDtoList){
 
         return Result.ok();
