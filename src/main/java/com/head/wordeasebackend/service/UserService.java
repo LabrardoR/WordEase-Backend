@@ -1,10 +1,12 @@
 package com.head.wordeasebackend.service;
 
 import com.head.wordeasebackend.common.Result;
+import com.head.wordeasebackend.model.entity.SafetyUser;
 import com.head.wordeasebackend.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSession;
 
 
 /**
@@ -28,10 +30,10 @@ public interface UserService extends IService<User> {
      *
      * @param userAccount  用户账户
      * @param userPassword 用户密码
-     * @param request
+     * @param
      * @return 脱敏后的用户信息
      */
-    Result userLogin(String userAccount, String userPassword, HttpServletRequest request);
+    Result userLogin(String userAccount, String userPassword);
 
     /**
      * 用户脱敏
@@ -39,25 +41,24 @@ public interface UserService extends IService<User> {
      * @param originUser
      * @return
      */
-    User getSafetyUser(User originUser);
+    SafetyUser getSafetyUser(User originUser);
 
     /**
-     * 获取当前登录用户
      *
-     * @param request
-     * @return
+     * @param token 令牌
+     * @return 用户脱敏信息
      */
-    User getLoginUser(HttpServletRequest request);
+    SafetyUser getLoginUser(String token);
 
-    boolean isLogin(HttpServletRequest request);
+    boolean isLogin(String token);
 
     /**
      * 用户注销
      *
-     * @param request
+     * @param token
      * @return
      */
-    int userLogout(HttpServletRequest request);
+    int userLogout(String token);
 
 
 }

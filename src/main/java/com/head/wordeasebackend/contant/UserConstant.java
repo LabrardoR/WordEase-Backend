@@ -11,6 +11,8 @@ public interface UserConstant {
      */
     String USER_LOGIN_STATE = "userLoginState";
 
+
+
     //  ------- 权限 --------
 
     /**

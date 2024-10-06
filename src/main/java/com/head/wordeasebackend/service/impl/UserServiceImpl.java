@@ -1,24 +1,30 @@
 package com.head.wordeasebackend.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.jwt.JWTUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.head.wordeasebackend.common.ErrorCode;
 import com.head.wordeasebackend.common.Result;
-import com.head.wordeasebackend.exception.BusinessException;
+import com.head.wordeasebackend.contant.RedisConstant;
+import com.head.wordeasebackend.model.entity.SafetyUser;
 import com.head.wordeasebackend.model.entity.User;
+import com.head.wordeasebackend.model.response.UserLoginResponse;
 import com.head.wordeasebackend.service.UserService;
 import com.head.wordeasebackend.mapper.UserMapper;
+import com.head.wordeasebackend.utils.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.head.wordeasebackend.contant.RedisConstant.USER_LOGOUT_KEY;
 import static com.head.wordeasebackend.contant.UserConstant.USER_LOGIN_STATE;
 
 /**
@@ -32,6 +38,8 @@ import static com.head.wordeasebackend.contant.UserConstant.USER_LOGIN_STATE;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         implements UserService {
 
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
     @Resource
     private UserMapper userMapper;
 
@@ -97,11 +105,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      *
      * @param userAccount  用户账户
      * @param userPassword 用户密码
-     * @param request
      * @return 脱敏后的用户信息
      */
     @Override
-    public Result userLogin(String userAccount, String userPassword, HttpServletRequest request) {
+    public Result userLogin(String userAccount, String userPassword) {
         // 1. 校验
         if (StrUtil.isBlank(userAccount) || StrUtil.isBlank(userPassword)) {
             return Result.fail("账号或密码为空");
@@ -127,78 +134,94 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         User user = userMapper.selectOne(queryWrapper);
         // 用户不存在
         if (user == null) {
-            log.info("user login failed, userAccount cannot match userPassword");
+            log.info("用户名与密码不匹配");
             return Result.fail("用户不存在");
         }
         // 3. 用户脱敏
-        User safetyUser = getSafetyUser(user);
-        // 4. 记录用户的登录态
-        request.getSession().setAttribute(USER_LOGIN_STATE, safetyUser);
-        return Result.ok(safetyUser);
+        SafetyUser safetyUser = getSafetyUser(user);
+        // 4. 生成JWT令牌
+        String token = JwtUtil.genToken(safetyUser);
+        UserLoginResponse userLoginResponse = new UserLoginResponse();
+        userLoginResponse.setUser(safetyUser);
+        userLoginResponse.setToken(token);
+
+        return Result.ok(userLoginResponse);
     }
 
     /**
      * 用户脱敏
      *
-     * @param originUser
-     * @return
+     * @param originUser 原始信息
+     * @return 脱敏后的信息
      */
     @Override
-    public User getSafetyUser(User originUser) {
+    public SafetyUser getSafetyUser(User originUser) {
         if (originUser == null) {
             return null;
         }
-        User safetyUser = new User();
+        SafetyUser safetyUser = new SafetyUser();
         safetyUser.setId(originUser.getId());
         safetyUser.setUsername(originUser.getUsername());
         safetyUser.setUserAccount(originUser.getUserAccount());
         safetyUser.setAvatarUrl(originUser.getAvatarUrl());
         safetyUser.setGender(originUser.getGender());
-        safetyUser.setPhone(originUser.getPhone());
         safetyUser.setEmail(originUser.getEmail());
         safetyUser.setCreateTime(originUser.getCreateTime());
         return safetyUser;
     }
 
-    /**
-     * 获取当前登录用户
-     * @param request Session
-     * @return 脱敏后的用户登录信息，如果未登录则返回 null
-     */
-
+    // todo
     @Override
-    public User getLoginUser(HttpServletRequest request) {
-        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        User currentUser = (User) userObj;
-        if (currentUser == null) {
-            log.info("未登录");
+    public SafetyUser getLoginUser(String token) {
+        JwtUtil jwtUtil = new JwtUtil(stringRedisTemplate);
+        if(!jwtUtil.isValidToken(token)){
             return null;
         }
-        long userId = currentUser.getId();
-        // TODO 校验用户是否合法
-        User user = this.getById(userId);
-        if(user == null){
-            log.info("用户不存在");
-            return null;
-        }
-        User safetyUser = this.getSafetyUser(user);
+        SafetyUser safetyUser = jwtUtil.parseToken(token);
         return safetyUser;
     }
 
+    /**
+     * 获取当前登录用户 todo
+     * @param session Session
+     * @return 脱敏后的用户登录信息，如果未登录则返回 null
+     */
+
+//    @Override
+//    public SafetyUser getLoginUser(HttpSession session) {
+//        Object userObj = session.getAttribute(USER_LOGIN_STATE);
+//        User currentUser = (User) userObj;
+//        if (currentUser == null) {
+//            log.info("未登录");
+//            return null;
+//        }
+//        long userId = currentUser.getId();
+//        // TODO 校验用户是否合法
+//        User user = this.getById(userId);
+//        if(user == null){
+//            log.info("用户不存在");
+//            return null;
+//        }
+//        SafetyUser safetyUser = this.getSafetyUser(user);
+//        return safetyUser;
+//    }
+
     @Override
-    public boolean isLogin(HttpServletRequest request) {
-        return getLoginUser(request) != null;
+    public boolean isLogin(String token) {
+        return getLoginUser(token) != null;
     }
 
     /**
      * 用户注销
-     *
-     * @param request
+     * 注销逻辑：在redis中建立专属黑名单，若用户注销，则将当前用户的token存入黑名单中。
+     * 若用户调用需要鉴权的接口，则判断token是否在黑名单中，若在，则拒绝访问。
+     * @param token 令牌
      */
     @Override
-    public int userLogout(HttpServletRequest request) {
+    public int userLogout(String token) {
+        String logoutKey = USER_LOGOUT_KEY + token;
         // 移除登录态
-        request.getSession().removeAttribute(USER_LOGIN_STATE);
+        stringRedisTemplate.opsForValue().set(logoutKey,"invalid",1, TimeUnit.DAYS);
         return 1;
     }
 

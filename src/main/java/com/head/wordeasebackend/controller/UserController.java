@@ -1,23 +1,19 @@
 package com.head.wordeasebackend.controller;
 
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.head.wordeasebackend.common.ErrorCode;
 import com.head.wordeasebackend.common.Result;
-import com.head.wordeasebackend.exception.BusinessException;
-import com.head.wordeasebackend.model.entity.User;
+import com.head.wordeasebackend.model.entity.SafetyUser;
+import com.head.wordeasebackend.model.request.TokenRequest;
 import com.head.wordeasebackend.model.request.UserLoginRequest;
 import com.head.wordeasebackend.model.request.UserRegisterRequest;
 import com.head.wordeasebackend.service.UserService;
+import com.head.wordeasebackend.utils.JwtUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-import java.util.List;
-import java.util.stream.Collectors;
-import static com.head.wordeasebackend.contant.UserConstant.ADMIN_ROLE;
-import static com.head.wordeasebackend.contant.UserConstant.USER_LOGIN_STATE;
+
 
 /**
  * 用户接口
@@ -26,8 +22,9 @@ import static com.head.wordeasebackend.contant.UserConstant.USER_LOGIN_STATE;
 
 @RestController
 @RequestMapping("/user")
-@CrossOrigin
 public class UserController {
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @Resource
     private UserService userService;
@@ -35,8 +32,8 @@ public class UserController {
     /**
      * 用户注册
      *
-     * @param userRegisterRequest
-     * @return
+     * @param userRegisterRequest 注册请求体
+     * @return 注册结果(注册id)
      */
     @PostMapping("/register")
     public Result userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
@@ -63,41 +60,46 @@ public class UserController {
      * 用户登录
      *
      * @param userLoginRequest 登录请求体
-     * @param request
+     * @param
      * @return
      */
     @PostMapping("/login")
-    public Result userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    public Result userLogin(@RequestBody UserLoginRequest userLoginRequest) {
         if (userLoginRequest == null) {
             return Result.fail("登录信息为空");
+        }
+        String token = userLoginRequest.getToken();
+        JwtUtil jwtUtil = new JwtUtil(stringRedisTemplate);
+        if (token != null && jwtUtil.isValidToken(token)) {
+            return Result.ok("已登录");
         }
         String userAccount = userLoginRequest.getUserAccount();
         String userPassword = userLoginRequest.getUserPassword();
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
             return Result.fail("账号或密码为空");
         }
-        Result r = userService.userLogin(userAccount, userPassword, request);
-        User user = (User) r.getData();
-        if(user == null){
-            return Result.fail("账号或密码错误");
+        Result r = userService.userLogin(userAccount, userPassword);
+        if(r == null) {
+            return Result.fail("登录失败");
         }
-        return Result.ok(user);
+        return r;
     }
+
 
     /**
      * 用户注销
-     *
-     * @param request
-     * @return
+     * @param tokenRequest Token封装类
+     * @return 成功--1
      */
     @PostMapping("/logout")
-    public Result userLogout(HttpServletRequest request) {
-        if (request == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+    public Result userLogout(@RequestBody TokenRequest tokenRequest) {
+        String token = tokenRequest.getToken();
+        if (token == null) {
+            Result.fail("参数错误");
         }
-        int result = userService.userLogout(request);
+        int result = userService.userLogout(token);
         if(result != 1){
-            return Result.fail("注销失败！");
+            return Result.fail("退出失败！");
         }
         return Result.ok("退出成功！");
     }
@@ -105,54 +107,61 @@ public class UserController {
     /**
      * 获取当前用户
      *
-     * @param request
+     * @param tokenRequest 令牌
      * @return
      */
     @GetMapping("/current")
-    public Result getCurrentUser(HttpServletRequest request) {
-        User safetyUser = userService.getLoginUser(request);
+    public Result getCurrentUser(@RequestBody TokenRequest tokenRequest){
+        String token = tokenRequest.getToken();
+        if (token == null) {
+            Result.fail("参数错误");
+        }
+        SafetyUser safetyUser = userService.getLoginUser(token);
+        if(safetyUser == null){
+            return Result.fail("用户未登录");
+        }
         return Result.ok(safetyUser);
     }
 
-    // todo 管理员查询用户列表
-    @GetMapping("/search")
-    public Result searchUsers(String username, HttpServletRequest request) {
-        if (!isAdmin(request)) {
-            throw new BusinessException(ErrorCode.NO_AUTH, "缺少管理员权限");
-        }
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        if (StringUtils.isNotBlank(username)) {
-            queryWrapper.like("username", username);
-        }
-        List<User> userList = userService.list(queryWrapper);
-        List<User> list = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
-        return Result.ok(list);
-    }
+//    // todo 管理员查询用户列表
+//    @GetMapping("/search")
+//    public Result searchUsers(String username) {
+//        if (!isAdmin(session)) {
+//            Result.fail("无管理员权限");
+//        }
+//        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+//        if (StringUtils.isNotBlank(username)) {
+//            queryWrapper.like("username", username);
+//        }
+//        List<User> userList = userService.list(queryWrapper);
+//        List<SafetyUser> list = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
+//        return Result.ok(list);
+//    }
 
-    @PostMapping("/delete")
-    public Result deleteUser(@RequestBody long id, HttpServletRequest request) {
-        if (!isAdmin(request)) {
-            throw new BusinessException(ErrorCode.NO_AUTH);
-        }
-        if (id <= 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        boolean b = userService.removeById(id);
-        return Result.ok(b);
-    }
+//    @PostMapping("/delete")
+//    public Result deleteUser(@RequestBody long id, HttpSession session) {
+//        if (!isAdmin(session)) {
+//            throw new BusinessException(ErrorCode.NO_AUTH);
+//        }
+//        if (id <= 0) {
+//            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+//        }
+//        boolean b = userService.removeById(id);
+//        return Result.ok(b);
+//    }
 
 
-    /**
-     * 是否为管理员
-     *
-     * @param request
-     * @return
-     */
-    private boolean isAdmin(HttpServletRequest request) {
-        // 仅管理员可查询
-        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        User user = (User) userObj;
-        return user != null;
-    }
+//    /**
+//     * 是否为管理员
+//     *
+//     * @param
+//     * @return
+//     */
+//    private boolean isAdmin(HttpSession session) {
+//        // 仅管理员可查询
+//        Object userObj = session.getAttribute(USER_LOGIN_STATE);
+//        User user = (User) userObj;
+//        return user != null;
+//    }
 
 }
