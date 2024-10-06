@@ -70,7 +70,12 @@ public class UserController {
         }
         String token = userLoginRequest.getToken();
         JwtUtil jwtUtil = new JwtUtil(stringRedisTemplate);
-        if (token != null && jwtUtil.isValidToken(token)) {
+        if (StringUtils.isNotBlank(token) && !jwtUtil.isInBlackList(token)) {
+            // 验证token是否合法
+            SafetyUser safetyUser = jwtUtil.parseToken(token);
+            if (safetyUser == null) {
+                return Result.fail("token不合法");
+            }
             return Result.ok("已登录");
         }
         String userAccount = userLoginRequest.getUserAccount();
