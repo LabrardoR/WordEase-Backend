@@ -55,6 +55,12 @@ public class WordController {
             return Result.fail("用户未登录");
         }
         Long result = userWordService.addWordToUserWordList(safetyUser.toUser(), wordToListRequest);
+        if(result == -1L){
+            return Result.fail("单词已存在");
+        }
+        if(result == 0){
+            return Result.fail("添加失败");
+        }
         return Result.ok(result);
     }
 

@@ -12,6 +12,7 @@ import com.head.wordeasebackend.service.UserService;
 import com.head.wordeasebackend.service.UserWordService;
 import com.head.wordeasebackend.mapper.UserWordMapper;
 import com.head.wordeasebackend.service.WordService;
+import io.swagger.models.auth.In;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -49,15 +50,23 @@ public class UserWordServiceImpl extends ServiceImpl<UserWordMapper, UserWord>
         String wordSpelling = wordToListRequest.getWordSpelling();
         Integer proficiency = wordToListRequest.getProficiency();
         // 查询单词id
+        QueryWrapper<UserWord> UWqueryWrapper = new QueryWrapper<>();
+        UWqueryWrapper.eq("user_id",user.getId());
+        UWqueryWrapper.eq("spelling",wordSpelling);
+        UserWord userWord = userWordMapper.selectOne(UWqueryWrapper);
+        if(userWord != null){
+            return -1L;
+        }
+
         QueryWrapper<Word> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("spelling",wordSpelling);
+        queryWrapper.eq("spelling", wordSpelling);
         Word word = wordMapper.selectOne(queryWrapper);
         Long wordId =  word.getId();
         Long userId = user.getId();
         String spelling = word.getSpelling();
         log.info("wordId:" + wordId);
 
-        UserWord userWord = new UserWord();
+        userWord = new UserWord();
         userWord.setUserId(userId);
         userWord.setWordId(wordId);
         userWord.setSpelling(spelling);
