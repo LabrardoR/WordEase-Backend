@@ -24,4 +24,9 @@ public class UserLoginRequest implements Serializable {
      */
     private String userPassword;
 
+    /**
+     * token
+     */
+    private String token;
+
 }
