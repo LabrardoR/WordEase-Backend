@@ -38,6 +38,10 @@ public class SafetyUser implements Serializable{
     private Integer gender;
 
     /**
+     * 0 - 普通用户，1 - 管理员
+     */
+    private Integer role;
+    /**
      * 邮箱
      */
     private String email;
@@ -58,6 +62,7 @@ public class SafetyUser implements Serializable{
         user.setGender(gender);
         user.setEmail(email);
         user.setCreateTime(createTime);
+        user.setRole(role);
         return user;
     }
 }

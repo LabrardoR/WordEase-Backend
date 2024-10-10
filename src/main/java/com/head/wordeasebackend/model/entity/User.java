@@ -1,16 +1,19 @@
 package com.head.wordeasebackend.model.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 用户实体
- *
+ * 用户
+ * @TableName user
  */
-@TableName(value = "user")
+@TableName(value ="user")
 @Data
 public class User implements Serializable {
     /**
@@ -20,24 +23,14 @@ public class User implements Serializable {
     private Long id;
 
     /**
-     * 用户昵称
-     */
-    private String username;
-
-    /**
      * 账号
      */
     private String userAccount;
 
     /**
-     * 用户头像
+     * 用户昵称
      */
-    private String avatarUrl;
-
-    /**
-     * 性别
-     */
-    private Integer gender;
+    private String username;
 
     /**
      * 密码
@@ -50,10 +43,24 @@ public class User implements Serializable {
     private String phone;
 
     /**
+     * 用户头像
+     */
+    private String avatarUrl;
+
+    /**
+     * 性别
+     */
+    private Integer gender;
+
+    /**
      * 邮箱
      */
     private String email;
 
+    /**
+     * 0 - 普通用户，1 - 管理员
+     */
+    private Integer role;
 
     /**
      * 创建时间
@@ -61,16 +68,14 @@ public class User implements Serializable {
     private Date createTime;
 
     /**
-     *
+     * 
      */
     private Date updateTime;
 
     /**
      * 是否删除
      */
-    @TableLogic
     private Integer isDelete;
-
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

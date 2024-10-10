@@ -38,8 +38,9 @@ public class JwtUtil {
                 .withClaim("username", safetyUser.getUsername())
                 .withClaim("gender", safetyUser.getGender())
                 .withClaim("avatarUrl", safetyUser.getAvatarUrl())
-                .withClaim("email", (String) safetyUser.getEmail())
-                .withClaim("createTime", (Date) safetyUser.getCreateTime())
+                .withClaim("email", safetyUser.getEmail())
+                .withClaim("role", safetyUser.getRole())
+                .withClaim("createTime", safetyUser.getCreateTime())
                 .withExpiresAt(new Date(System.currentTimeMillis() + 1000*60*60*24))//添加过期时间一天
                 .sign(Algorithm.HMAC256(KEY)); // 使用HMAC256算法签名
     }
@@ -69,6 +70,7 @@ public class JwtUtil {
             safetyUser.setGender(decodedJWT.getClaim("gender").asInt());
             safetyUser.setEmail(decodedJWT.getClaim("email").asString());
             safetyUser.setCreateTime(decodedJWT.getClaim("createTime").asDate());
+            safetyUser.setRole(decodedJWT.getClaim("role").asInt());
             // 其他不需要从 token 中解析的字段可以默认不设置
         } catch (JWTVerificationException e) {
             // 处理token校验失败的情况，比如token过期、签名不合法等
