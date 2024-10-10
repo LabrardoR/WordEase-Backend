@@ -1,6 +1,6 @@
 package com.head.wordeasebackend.service;
 
-import com.head.wordeasebackend.model.dto.WordDto;
+import com.head.wordeasebackend.model.response.WordSearchResponse;
 import com.head.wordeasebackend.model.entity.Word;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -11,5 +11,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface WordService extends IService<Word> {
 
-    WordDto queryWordBySpelling(String wordSpelling);
+    WordSearchResponse queryWordBySpelling(String wordSpelling);
 }
