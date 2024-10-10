@@ -2,19 +2,22 @@ package com.head.wordeasebackend.controller;
 
 
 import com.head.wordeasebackend.common.Result;
-import com.head.wordeasebackend.model.dto.WordToListRequest;
-import com.head.wordeasebackend.model.dto.WordDto;
-import com.head.wordeasebackend.model.dto.WordRequestDTO;
+import com.head.wordeasebackend.model.request.WordDeletedFromListRequest;
+import com.head.wordeasebackend.model.request.WordToListRequest;
+import com.head.wordeasebackend.model.response.WordSearchForAIResponse;
+import com.head.wordeasebackend.model.response.WordSearchResponse;
+import com.head.wordeasebackend.model.request.WordSearchRequest;
 import com.head.wordeasebackend.model.entity.SafetyUser;
-import com.head.wordeasebackend.model.entity.User;
 import com.head.wordeasebackend.model.request.TokenRequest;
 import com.head.wordeasebackend.service.UserService;
 import com.head.wordeasebackend.service.UserWordService;
 import com.head.wordeasebackend.service.WordService;
+import com.head.wordeasebackend.utils.BigModelUtil;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpSession;
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -27,19 +30,53 @@ public class WordController {
     @Resource
     private UserWordService userWordService;
 
-    @PostMapping("/search")
-    public Result queryWord(@RequestBody WordRequestDTO wordRequestDTO){
+//    @PostMapping("/search")
+//    public Result queryWord(@RequestBody WordSearchRequest wordSearchRequest){
+//
+//        String wordSpelling = wordSearchRequest.getWordSpelling();
+//        if(wordSpelling == null){
+//            return Result.fail("单词拼写不能为空");
+//        }
+//        System.out.println(wordSpelling);
+//        WordSearchResponse wordSearchResponse = wordService.queryWordBySpelling(wordSpelling);
+//        if(wordSearchResponse == null){
+//            // todo 调用 AI 查询
+//            wordSearchResponse = BigModelUtil.searchWord(wordSpelling);
+//            if(wordSearchResponse == null){
+//                return Result.fail("单词不存在");
+//            }
+//            WordSearchForAIResponse wordSearchForAIResponse = new WordSearchForAIResponse();
+//            wordSearchForAIResponse.setWordSearchResponse(wordSearchResponse);
+//            wordSearchForAIResponse.setMessage("此单词在本站数据库中不存在，通过AI查询到如下释义");
+//            return Result.ok(wordSearchForAIResponse);
+//        }
+//        return Result.ok(wordSearchResponse);
+//    }
 
-        String wordSpelling = wordRequestDTO.getWordSpelling();
-        if(wordSpelling == null){
-            return Result.fail("单词拼写不能为空");
-        }
-        System.out.println(wordSpelling);
-        WordDto wordDto = wordService.queryWordBySpelling(wordSpelling);
-        if(wordDto == null){
-            return Result.fail("单词不存在");
-        }
-        return Result.ok(wordDto);
+    @GetMapping("/search")
+    public SseEmitter queryWord(@RequestParam String wordSpelling) {
+        SseEmitter sseEmitter = new SseEmitter();
+        new Thread(()->{
+            try {
+                sseEmitter.send("正在查询单词: " + wordSpelling);
+
+                // 调用 AI 查询
+                String response = BigModelUtil.searchWord(wordSpelling);
+
+                // 发送结果
+                int i = 5;
+                while (i > 0){
+                    i--;
+                    sseEmitter.send(response);
+                }
+
+
+                sseEmitter.complete();
+            } catch (IOException e) {
+                sseEmitter.completeWithError(e);
+            }
+        }).start();
+        return sseEmitter;
     }
 
     /**
@@ -63,6 +100,24 @@ public class WordController {
         }
         return Result.ok(result);
     }
+    @PostMapping("/deleteWordFromList")
+    public Result deleteWordFromList(@RequestBody WordDeletedFromListRequest wordDeletedFromListRequest){
+        String token = wordDeletedFromListRequest.getToken();
+        String wordSpelling = wordDeletedFromListRequest.getWordSpelling();
+        if(token == null || wordSpelling == null) {
+            return Result.fail("参数错误");
+        }
+        SafetyUser safetyUser = userService.getLoginUser(token);
+        if(safetyUser == null){
+            return Result.fail("用户未登录");
+        }
+        Long result = userWordService.deleteWordFromUserWordList(safetyUser.toUser(), wordDeletedFromListRequest);
+        if(result == null){
+            return Result.fail("删除失败");
+        }
+        return Result.ok("删除成功");
+    }
+
 
 
     /**
@@ -70,7 +125,7 @@ public class WordController {
      * @param tokenRequest token封装类
      * @return 单词列表封装类
      */
-    @GetMapping("/getWordList")
+    @PostMapping("/getWordList")
     public Result getWordList(@RequestBody TokenRequest tokenRequest){
         if(tokenRequest == null){
             return Result.fail("参数错误");
@@ -94,11 +149,11 @@ public class WordController {
 
     /**
      * 批量添加单词到用户的单词表 todo
-     * @param wordDtoList
+     * @param wordSearchResponseList
      * @return
      */
     @PostMapping("/test")
-    public Result addWordsToList(@RequestBody List<WordDto> wordDtoList){
+    public Result addWordsToList(@RequestBody List<WordSearchResponse> wordSearchResponseList){
 
         return Result.ok();
     }

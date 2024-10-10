@@ -1,10 +1,11 @@
 package com.head.wordeasebackend.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.head.wordeasebackend.mapper.WordMapper;
-import com.head.wordeasebackend.model.dto.WordToListRequest;
+import com.head.wordeasebackend.model.entity.SafetyUser;
+import com.head.wordeasebackend.model.request.WordDeletedFromListRequest;
+import com.head.wordeasebackend.model.request.WordToListRequest;
 import com.head.wordeasebackend.model.entity.User;
 import com.head.wordeasebackend.model.entity.UserWord;
 import com.head.wordeasebackend.model.entity.Word;
@@ -12,7 +13,6 @@ import com.head.wordeasebackend.service.UserService;
 import com.head.wordeasebackend.service.UserWordService;
 import com.head.wordeasebackend.mapper.UserWordMapper;
 import com.head.wordeasebackend.service.WordService;
-import io.swagger.models.auth.In;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -78,6 +78,23 @@ public class UserWordServiceImpl extends ServiceImpl<UserWordMapper, UserWord>
     }
 
     @Override
+    public Long deleteWordFromUserWordList(User user, WordDeletedFromListRequest wordDeletedFromListRequest) {
+        if(wordDeletedFromListRequest == null){
+            return null;
+        }
+
+        String wordSpelling = wordDeletedFromListRequest.getWordSpelling();
+        String token = wordDeletedFromListRequest.getToken();
+        SafetyUser safetyUser = userService.getLoginUser(token);
+        User loginUser = safetyUser.toUser();
+        QueryWrapper<UserWord> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id",user.getId());
+        queryWrapper.eq("wordSpelling",wordSpelling);
+        boolean result = remove(queryWrapper);
+        return result? 1L : null;
+    }
+
+    @Override
     public List<WordToListRequest> getWordList(User user) {
         // 1. 在 user_word 表中查询用户的单词表
         QueryWrapper<UserWord> queryWrapper = new QueryWrapper<>();
@@ -100,6 +117,8 @@ public class UserWordServiceImpl extends ServiceImpl<UserWordMapper, UserWord>
 
         return wordToListRequestList;
     }
+
+
 }
 
 
