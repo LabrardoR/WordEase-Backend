@@ -3,6 +3,7 @@ package com.head.wordeasebackend.service;
 import com.head.wordeasebackend.model.response.WordSearchResponse;
 import com.head.wordeasebackend.model.entity.Word;
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
 * @author headhead
@@ -12,4 +13,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface WordService extends IService<Word> {
 
     WordSearchResponse queryWordBySpelling(String wordSpelling);
+
+    SseEmitter queryWordBySpellingByAI(String wordSpelling);
 }
