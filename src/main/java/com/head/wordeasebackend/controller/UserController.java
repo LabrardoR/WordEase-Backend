@@ -149,7 +149,7 @@ public class UserController {
     }
 
     @PostMapping("/update")
-    public Result updateUser(@RequestBody UserUpdateRequest userUpdateRequest) {
+    public Result userUpdate(@RequestBody UserUpdateRequest userUpdateRequest) {
         SafetyUser safetyUser = userUpdateRequest.getSafetyUser();
         String token = userUpdateRequest.getToken();
         if (token == null || safetyUser == null) {

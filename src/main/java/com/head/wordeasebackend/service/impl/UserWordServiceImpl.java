@@ -40,6 +40,12 @@ public class UserWordServiceImpl extends ServiceImpl<UserWordMapper, UserWord>
     @Resource
     private WordMapper wordMapper;
 
+    /**
+     *
+     * @param user
+     * @param wordToListRequest
+     * @return -1 表示该单词已经在用户单词表中了，0 表示添加失败，id 表示添加成功
+     */
     @Override
     public Long addWordToUserWordList(User user, WordToListRequest wordToListRequest) {
         if(wordToListRequest == null){
@@ -61,9 +67,16 @@ public class UserWordServiceImpl extends ServiceImpl<UserWordMapper, UserWord>
         QueryWrapper<Word> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("spelling", wordSpelling);
         Word word = wordMapper.selectOne(queryWrapper);
-        Long wordId =  word.getId();
+        String spelling = wordSpelling;
         Long userId = user.getId();
-        String spelling = word.getSpelling();
+        Long wordId;
+        // 说明该单词不在词库
+        if(word == null){
+            wordId = -1L;
+        }
+        else {
+            wordId =  word.getId();
+        }
         log.info("wordId:" + wordId);
 
         userWord = new UserWord();
@@ -74,7 +87,7 @@ public class UserWordServiceImpl extends ServiceImpl<UserWordMapper, UserWord>
         userWord.setAttribute(1);
         boolean result = save(userWord);
 
-        return result ? userWord.getId() : null;
+        return result ? userWord.getId() : 0L;
     }
 
     @Override
@@ -89,7 +102,7 @@ public class UserWordServiceImpl extends ServiceImpl<UserWordMapper, UserWord>
         User loginUser = safetyUser.toUser();
         QueryWrapper<UserWord> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_id",user.getId());
-        queryWrapper.eq("wordSpelling",wordSpelling);
+        queryWrapper.eq("spelling",wordSpelling);
         boolean result = remove(queryWrapper);
         return result? 1L : null;
     }
