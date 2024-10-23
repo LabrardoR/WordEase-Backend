@@ -4,22 +4,25 @@ package com.head.wordeasebackend.controller;
 
 import com.head.wordeasebackend.common.Result;
 import com.head.wordeasebackend.model.request.*;
-import com.head.wordeasebackend.model.response.WordSearchResponse;
+import com.head.wordeasebackend.model.response.WordQueryResponse;
 import com.head.wordeasebackend.model.entity.SafetyUser;
 import com.head.wordeasebackend.service.UserService;
 import com.head.wordeasebackend.service.UserWordService;
 import com.head.wordeasebackend.service.WordService;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.annotation.Resource;
+import java.lang.annotation.Documented;
 import java.util.List;
 
 @RestController
+@Slf4j
 @RequestMapping ("/word")
 public class WordController {
     @Resource
@@ -38,7 +41,7 @@ public class WordController {
      * @param wordSpelling 单词拼写
      * @return 单词搜索响应类
      */
-    @GetMapping("/search")
+    @GetMapping("/queryWord")
     public SseEmitter queryWord(@RequestParam("wordSpelling") String wordSpelling){
         if(wordSpelling == null || wordSpelling.trim().isEmpty()){
             SseEmitter emitter = new SseEmitter();
@@ -50,12 +53,12 @@ public class WordController {
             }
             return emitter;
         }
-        WordSearchResponse wordSearchResponse = wordService.queryWordBySpelling(wordSpelling);
-        if(wordSearchResponse != null){
+        WordQueryResponse wordQueryResponse = wordService.queryWordBySpelling(wordSpelling);
+        if(wordQueryResponse != null){
             SseEmitter emitter = new SseEmitter();
             try {
                 // 将现有结果发送到客户端
-                emitter.send(Result.ok(wordSearchResponse));
+                emitter.send(Result.ok(wordQueryResponse));
                 emitter.complete();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -67,6 +70,43 @@ public class WordController {
         }
     }
 
+    /**
+     * 查询句子翻译
+     * @param sentence 例句
+     * @return 流式输出结果
+     */
+    @GetMapping("/querySentence")
+    public SseEmitter querySentence(@RequestParam("sentence") String sentence){
+        if(sentence == null || sentence.trim().isEmpty()){
+            SseEmitter emitter = new SseEmitter();
+            try{
+                emitter.send("句子不能为空".getBytes());
+                emitter.complete();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+            return emitter;
+        }
+        return wordService.querySentenceByAI(sentence);
+    }
+
+    @GetMapping("/exerciseWords")
+    public SseEmitter exerciseWords(@RequestParam("wordList") List<String> wordList){
+        if(wordList == null || wordList.isEmpty()){
+            SseEmitter emitter = new SseEmitter();
+            try{
+                emitter.send("句子不能为空".getBytes());
+                emitter.complete();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+            return emitter;
+        }
+
+        // todo 生成一个对话，方便背单词，并返回，
+
+        return wordService.exerciseWords(wordList);
+    }
 
 
 
@@ -91,6 +131,7 @@ public class WordController {
         }
         return Result.ok(result);
     }
+
     @PostMapping("/deleteWordFromList")
     public Result deleteWordFromList(@RequestBody WordDeletedFromListRequest wordDeletedFromListRequest){
         String token = wordDeletedFromListRequest.getToken();
@@ -140,11 +181,12 @@ public class WordController {
 
     /**
      * 批量添加单词到用户的单词表 todo
-     * @param wordSearchResponseList
+     * @param WordQueryResponseList
      * @return
      */
+
     @PostMapping("/test")
-    public Result addWordsToList(@RequestBody List<WordSearchResponse> wordSearchResponseList){
+    public Result addWordsToList(@RequestBody List<WordQueryResponse> WordQueryResponseList){
 
         return Result.ok();
     }

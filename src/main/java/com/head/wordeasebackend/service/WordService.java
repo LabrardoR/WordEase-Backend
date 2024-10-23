@@ -1,9 +1,12 @@
 package com.head.wordeasebackend.service;
 
-import com.head.wordeasebackend.model.response.WordSearchResponse;
+import com.head.wordeasebackend.model.response.WordQueryResponse;
+import com.head.wordeasebackend.model.response.WordQueryResponse;
 import com.head.wordeasebackend.model.entity.Word;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.List;
 
 /**
 * @author headhead
@@ -12,7 +15,12 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 */
 public interface WordService extends IService<Word> {
 
-    WordSearchResponse queryWordBySpelling(String wordSpelling);
+    WordQueryResponse queryWordBySpelling(String wordSpelling);
 
     SseEmitter queryWordBySpellingByAI(String wordSpelling);
+
+    SseEmitter querySentenceByAI(String sentence);
+
+    SseEmitter exerciseWords(List<String> wordList);
+
 }

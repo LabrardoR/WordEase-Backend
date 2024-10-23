@@ -6,7 +6,7 @@ import lombok.Data;
  *   单词信息封装类
  */
 @Data
-public class WordSearchResponse {
+public class WordQueryResponse {
     /**
      * 单词拼写
      */
