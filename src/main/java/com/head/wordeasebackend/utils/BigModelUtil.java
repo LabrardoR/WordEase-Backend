@@ -16,12 +16,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 public class BigModelUtil {
 
     @Resource
     private ObjectMapper objectMapper;
+
+
+    private final List<String> correctAnswers = new ArrayList<>(); // 用于存储正确答案
+    private final StringBuffer stringBuffer = new StringBuffer();
 
     public SseEmitter init(String jsonBody) {
         SseEmitter emitter = createSeeEmitter();
@@ -54,14 +61,28 @@ public class BigModelUtil {
                             continue;
                         }
                         if (line.equals("[DONE]")) {
+                            // 收到 [DONE] 信号，停止读取
+                            // 此处对 stringBuffer 中的数据进行处理，将每个答案都加入到 correctAnswers 列表中
+                            // todo
+
+                            //System.out.println(stringBuffer.toString());
+                            String str = stringBuffer.toString();
+                            Pattern pattern = Pattern.compile("\\d+:([A-D])");
+                            Matcher matcher = pattern.matcher(str);
+                            while(matcher.find()){
+                                correctAnswers.add(matcher.group(1));
+                            }
+                            System.out.println(correctAnswers);
                             break;
                         }
                         JSONObject jsonObject = new JSONObject(line);
                         JSONArray choices = jsonObject.getJSONArray("choices");
                         String content = choices.getJSONObject(0).getJSONObject("delta").getStr("content");
                         if (content != null) {
+                            // 仅将非答案内容发送给前端
+                            stringBuffer.append(content);
                             System.out.print(content);
-                            emitter.send(content); // 逐行发送数据到客户端
+                            emitter.send(content);
                         }
                     }
                 }
@@ -103,6 +124,11 @@ public class BigModelUtil {
         return init(jsonBody);
     }
 
+
+    public List<String> getCorrectAnswers() {
+        return new ArrayList<>(correctAnswers); // 返回正确答案的副本
+    }
+
     public SseEmitter queryWord(String wordSpelling) {
         String str =  "为我查询" + wordSpelling + "的意思，返回的信息参照如下模板：“此单词翻译来自AI：释义：xxxxx，音标xxx，例句xxxxxx，单词类型xx”，注意：1.例句中每个单词之间的空格要替换成“~”，如'I~am~a~student.'；2.单词的属性要在释义中给出，如n/v/adj；3.单词类型是指的cet-4、cet-6、雅思、托福等等";
         return callBigModel(str);
@@ -113,9 +139,18 @@ public class BigModelUtil {
         return callBigModel(str);
     }
 
-    public SseEmitter exerciseWords(List<String> wordList) {
-        String str = "根据下列单词生成一篇不超过100词的英语文章，并在给出文章的翻译，便于我学习英语单词，单词列表如下：" + wordList + "，返回的信息参照如下模板：“This is English article：xxxxxx"
-                   + "这是中文翻译：xxxx";
+
+    public SseEmitter exerciseWords(List<String> wordList, List<String> answerList) {
+        String str = "根据下列单词生成一篇不超过100词的英语文章，并在给出文章的翻译，便于我学习记忆这几个英语单词，单词列表如下：" + wordList
+                + "接下来，你还要要为这些单词生成三道练习题，并为每道题生成A、B、C、D四个选项，在全文的最后给出所有题目的答案，答案的格式示例为Answers:{1:A,2:B,3:D}" ;
+        answerList = getCorrectAnswers();
         return callBigModel(str);
     }
+    public SseEmitter getAnswer() {
+
+        String str = "请给出刚才三道题的答案，答案示例{{1:A,2:B,3:C}}";
+        System.out.println("答案为: ");
+        return callBigModel(str);
+    }
+
 }

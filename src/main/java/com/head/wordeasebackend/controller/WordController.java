@@ -95,7 +95,7 @@ public class WordController {
         if(wordList == null || wordList.isEmpty()){
             SseEmitter emitter = new SseEmitter();
             try{
-                emitter.send("句子不能为空".getBytes());
+                emitter.send("单词不能为空".getBytes());
                 emitter.complete();
             }catch (Exception e){
                 e.printStackTrace();
@@ -106,6 +106,11 @@ public class WordController {
         // todo 生成一个对话，方便背单词，并返回，
 
         return wordService.exerciseWords(wordList);
+    }
+    @GetMapping("/checkAnswer")
+    public Result checkAnswer(@RequestParam("answerList") List<String> answerList){
+
+        return wordService.checkAnswer(answerList);
     }
 
 

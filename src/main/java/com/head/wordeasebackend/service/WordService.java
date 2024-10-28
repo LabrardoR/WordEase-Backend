@@ -1,5 +1,6 @@
 package com.head.wordeasebackend.service;
 
+import com.head.wordeasebackend.common.Result;
 import com.head.wordeasebackend.model.response.WordQueryResponse;
 import com.head.wordeasebackend.model.response.WordQueryResponse;
 import com.head.wordeasebackend.model.entity.Word;
@@ -23,4 +24,5 @@ public interface WordService extends IService<Word> {
 
     SseEmitter exerciseWords(List<String> wordList);
 
+    Result checkAnswer(List<String> answerList);
 }

@@ -3,6 +3,7 @@ package com.head.wordeasebackend.service.impl;
 import cn.hutool.json.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.head.wordeasebackend.common.Result;
 import com.head.wordeasebackend.model.response.WordQueryResponse;
 import com.head.wordeasebackend.model.entity.Word;
 import com.head.wordeasebackend.service.WordService;
@@ -15,6 +16,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.annotation.Resource;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.head.wordeasebackend.contant.RedisConstant.WORD_DATA;
@@ -35,6 +37,8 @@ public class WordServiceImpl extends ServiceImpl<WordMapper, Word>
     private StringRedisTemplate stringRedisTemplate;
     @Resource
     private BigModelUtil bigModelUtil;
+
+    List<String> correctAnswers = new ArrayList<>();
 
 
 
@@ -97,7 +101,17 @@ public class WordServiceImpl extends ServiceImpl<WordMapper, Word>
 
     @Override
     public SseEmitter exerciseWords(List<String> wordList) {
-        return bigModelUtil.exerciseWords(wordList);
+
+        return bigModelUtil.exerciseWords(wordList, correctAnswers);
+    }
+
+    @Override
+    public Result checkAnswer(List<String> answerList) {
+        if(correctAnswers.equals(answerList)){
+
+            return Result.ok("恭喜你，答对了！");
+        }
+        return Result.ok("很遗憾，答错了！");
     }
 }
 
